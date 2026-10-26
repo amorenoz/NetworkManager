@@ -632,6 +632,7 @@ typedef struct _NMDevicePrivate {
     bool link_props_set : 1;
 
     NMDeviceStageState stage1_sriov_state : 3;
+    NMDeviceStageState stage2_dispatcher_state : 3;
 
     char *current_stable_id;
 
@@ -11000,6 +11001,19 @@ nm_device_get_private_files(NMDevice *self)
     return NM_DEVICE_GET_PRIVATE(self)->private_files.table;
 }
 
+static void
+activate_stage2_pre_config_cb(NMDispatcherCallId *call_id, gpointer user_data)
+{
+    NMDevice        *self = NM_DEVICE(user_data);
+    NMDevicePrivate *priv = NM_DEVICE_GET_PRIVATE(self);
+
+    g_return_if_fail(call_id == priv->dispatcher.call_id);
+
+    priv->dispatcher.call_id      = NULL;
+    priv->stage2_dispatcher_state = NM_DEVICE_STAGE_STATE_COMPLETED;
+    nm_device_activate_schedule_stage2_device_config(self, FALSE);
+}
+
 /*
  * activate_stage2_device_config
  *
@@ -11020,6 +11034,23 @@ activate_stage2_device_config(NMDevice *self)
     NMTernary        accept_all_mac_addresses;
 
     nm_device_state_changed(self, NM_DEVICE_STATE_CONFIG, NM_DEVICE_STATE_REASON_NONE);
+
+    if (priv->stage2_dispatcher_state != NM_DEVICE_STAGE_STATE_COMPLETED) {
+        if (priv->stage2_dispatcher_state == NM_DEVICE_STAGE_STATE_PENDING)
+            return;
+
+        priv->stage2_dispatcher_state = NM_DEVICE_STAGE_STATE_PENDING;
+        if (nm_dispatcher_call_device(NM_DISPATCHER_ACTION_PRE_CONFIG,
+                                      self,
+                                      NULL,
+                                      activate_stage2_pre_config_cb,
+                                      self,
+                                      &priv->dispatcher.call_id))
+            return;
+
+        /* Just proceed on errors */
+        priv->stage2_dispatcher_state = NM_DEVICE_STAGE_STATE_COMPLETED;
+    }
 
     applied = nm_device_get_applied_connection(self);
 
@@ -17439,6 +17470,8 @@ _cancel_activation(NMDevice *self)
     }
 
     _dispatcher_cleanup(self);
+
+    priv->stage2_dispatcher_state = NM_DEVICE_STAGE_STATE_INIT;
 
     _dev_ip_state_cleanup(self, AF_INET, FALSE);
     _dev_ip_state_cleanup(self, AF_INET6, FALSE);

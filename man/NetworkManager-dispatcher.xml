@@ -67,6 +67,20 @@
     <para>The actions are:</para>
     <variablelist class="dispatcher-options">
       <varlistentry>
+        <term><varname>pre-config</varname></term>
+        <listitem><para>The interface is about to be configured but no layer-2
+        or IP configuration has been applied yet.  Scripts acting on this event
+        must be placed or symlinked into the
+        <filename>/etc/NetworkManager/dispatcher.d/pre-config.d</filename>
+        directory, and NetworkManager will wait for script execution to complete
+        before proceeding with device configuration.  This event fires before
+        any OVSDB entries are created, making it suitable for preparing hardware
+        (for example, rebinding PCI devices to vfio-pci for OVS-DPDK).
+        Note that IP-related environment variables are not available at this
+        stage.
+        </para></listitem>
+      </varlistentry>
+      <varlistentry>
         <term><varname>pre-up</varname></term>
         <listitem><para>The interface is connected to the network but is not
         yet fully activated.  Scripts acting on this event must be placed or

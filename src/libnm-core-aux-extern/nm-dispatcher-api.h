@@ -37,6 +37,7 @@
 #define NMD_ACTION_DNS_CHANGE          "dns-change"
 #define NMD_ACTION_DEVICE_ADD          "device-add"
 #define NMD_ACTION_DEVICE_DELETE       "device-delete"
+#define NMD_ACTION_PRE_CONFIG          "pre-config"
 
 typedef enum {
     DISPATCH_RESULT_UNKNOWN     = 0,

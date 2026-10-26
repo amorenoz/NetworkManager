@@ -844,6 +844,8 @@ find_scripts(Request *request, const char *device_handler)
         subdir = "pre-up.d";
     else if (NM_IN_STRSET(request->action, NMD_ACTION_PRE_DOWN, NMD_ACTION_VPN_PRE_DOWN))
         subdir = "pre-down.d";
+    else if (NM_IN_STRSET(request->action, NMD_ACTION_PRE_CONFIG))
+        subdir = "pre-config.d";
     else
         subdir = NULL;
 
